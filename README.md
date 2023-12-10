@@ -17,6 +17,6 @@
     * python3 server.py - Linux
     The server by default runs on the http://localhost:5000
 
-##Checking Database
+## Checking Database
 * sqlite3 attacks.db
 * SELECT * FROM attacks
