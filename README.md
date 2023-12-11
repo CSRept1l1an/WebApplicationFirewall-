@@ -15,5 +15,5 @@
     The server by default runs on the http://localhost:5000
 
 ## Checking Database
-* sqlite3 attacks.db
+* sqlite3 waf.db
 * SELECT * FROM attacks
