@@ -2,21 +2,63 @@ import sqlite3
 from traceback import print_tb
 from flask import Flask, render_template, request, flash, redirect, url_for, session, request, g
 from flask_session import Session
-from SQLi import detect_sql_injection
 from AttackTest import attack_tester
 import time
 
+# Function to create tables
+def create_tables():
+    connection = sqlite3.connect('waf.db')
+    cursor = connection.cursor()
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS posts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            title TEXT NOT NULL,
+            content TEXT NOT NULL
+        )
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL UNIQUE,
+            password TEXT NOT NULL
+        )
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS attacks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            attack_type TEXT,
+            TIMESTAMP DATETIME DEFAULT CURRENT_TIMESTAMP,
+            ip_address TEXT
+        )
+    ''')
+
+    cursor.execute('''
+        INSERT OR IGNORE INTO users (username, password) VALUES (?, ?)
+    ''', ('admin', 'keystone'))
+
+    connection.commit()
+    connection.close()
+
+# Create Flask app
 app = Flask(__name__)
 app.secret_key = 'super secret key'
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///waf.db'
 Session(app)
+
+# Initialize tables
+create_tables()
 
 request_count = 0
 last_reset = time.time()
 
 def get_db_connection():
-    conn = sqlite3.connect('database.db',  check_same_thread=False)
+    conn = sqlite3.connect('waf.db',  check_same_thread=False)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -48,45 +90,37 @@ def limit_requests():
       
     
     # Check if request count has reached 60, if not, process the request
-    if request_count >= 2:
+    if request_count >= 20:
         print("Too many requests. Try again later.")  # HTTP status code for "Too Many Requests"
         DDOS = False
     else:
         request_count += 1
+
 
 @app.route("/login", methods=["POST"])
 def post_login():
     username = request.form.get("username")
     password = request.form.get("password")
     
-    if len(username) > 0:
-        if(attack_tester(username)):
-            print("Hello")
+    if len(username) > 0 and len(password) > 0:
+        if attack_tester(username) or attack_tester(password):
+            flash("Potential attack detected", "error")
+            return render_template("login.html")
+
+        conn = get_db_connection()
+        user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
+        conn.close()
+
+        if user and user['password'] == password:
+            session["name"] = username
+            return redirect("/home")
         else:
-            conn = get_db_connection()
-            user = conn.execute(f'SELECT * FROM users where username = "{username}"').fetchall()
-            conn.close()
-            
-            if len(user) > 0:
-                if len(password) > 0:
-                    conn = get_db_connection()
-                    query = f'SELECT username FROM users where username = "{username}" and  password = "{password}"'
-                    print(query)
-                    validation = conn.execute(query).fetchone()
-                    conn.close()
-                    print(validation[0])
-                    if len(validation) > 0:
-                        session["name"] = request.form.get("username")
-                        return redirect("/home")
-                    else:
-                        flash("Wrong password", "error")
-                else:
-                    flash("Enter password", "error")
-            else:
-                flash("Wrong username", "error")
+            flash("Incorrect username or password", "error")
     else:
-        flash("Enter username", "error")
+        flash("Enter both username and password", "error")
+
     return render_template("login.html")
+
 
 @app.route("/home")
 def home():
@@ -99,8 +133,6 @@ def home():
     return render_template("home.html", username=session.get("name"), attacks=attacks)
 
 
-
-@app.route('/home')
 def display_attack_info():
     # Get attack information
     attack_data = get_attack_info()
@@ -109,7 +141,18 @@ def display_attack_info():
     return render_template('attacks.html', attack_data=attack_data)
 
 
-
+def get_attack_info():
+    conn = sqlite3.connect('waf.db', check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    # Assuming your table structure has columns id, attack_type, TIMESTAMP, and ip_address
+    cursor.execute('SELECT * FROM attacks;')
+    attack_data = cursor.fetchall()
+    
+    conn.close()
+    
+    return attack_data
 
 @app.route("/logout")
 def logout():
