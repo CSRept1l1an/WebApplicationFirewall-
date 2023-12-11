@@ -2,7 +2,7 @@ import re
 import sqlite3
 import socket
 
-connection = sqlite3.connect('database.db', check_same_thread=False)
+connection = sqlite3.connect('waf.db', check_same_thread=False)
 cur = connection.cursor()
 ip_address = socket.gethostbyname(socket.gethostname())
 
@@ -13,9 +13,6 @@ def detect_sql_injection(input_string):
 
     if re.search(sql_injection_pattern, input_string, re.IGNORECASE) or re.search(sql_pattern, input_string,
                                                                                   re.IGNORECASE):
-        user_input = True
-
-# Example for SQLi attack
-
-user_input = "OR 1=1"
-detect_sql_injection(user_input)
+        print ("SQL injection")
+        return True
+  
