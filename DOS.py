@@ -1,7 +1,7 @@
 from flask import Flask, request
 import time
 
-app = Flask(_name_)
+app = Flask(__name__)
 
 request_count = 0
 last_reset = time.time()
@@ -23,5 +23,5 @@ def limit_requests():
     else:
         request_count += 1
 
-if _name_ == '_main_':
+if __name__ == '__main__':
     app.run(debug=True)
