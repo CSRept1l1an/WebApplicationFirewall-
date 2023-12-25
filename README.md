@@ -1,5 +1,5 @@
 # Web Application Firewall 
-
+This is a lightweight and robust Web Application Firewall (WAF) developed from scratch in just 24 hours during the Hackathon event. This project aims to enhance web application security by providing a simple yet effective defense mechanism against common web attacks.
 ## Setting Up
 1. Set up a virtual environment for python
     * Linux
