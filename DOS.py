@@ -6,6 +6,7 @@ app = Flask(__name__)
 request_count = 0
 last_reset = time.time()
 
+
 @app.before_request
 def limit_requests():
     global request_count, last_reset
@@ -22,6 +23,7 @@ def limit_requests():
         return "Too many requests. Try again later.", 429  # HTTP status code for "Too Many Requests"
     else:
         request_count += 1
+
 
 if __name__ == '__main__':
     app.run(debug=True)
