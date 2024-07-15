@@ -5,6 +5,7 @@ from flask_session import Session
 from AttackTest import attack_tester
 import time
 
+
 # Function to create tables
 def create_tables():
     connection = sqlite3.connect('waf.db')
