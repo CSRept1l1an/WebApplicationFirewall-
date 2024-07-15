@@ -58,6 +58,7 @@ create_tables()
 request_count = 0
 last_reset = time.time()
 
+
 def get_db_connection():
     conn = sqlite3.connect('waf.db',  check_same_thread=False)
     conn.row_factory = sqlite3.Row
@@ -67,16 +68,21 @@ def get_db_connection():
 @app.route('/')
 def index():    
     return render_template('index.html')
-  
+
+
 def my_route():
     client_ip = request.remote_addr
     print(f"Client IP: {client_ip}")
+
 
 @app.route("/login", methods=["GET"])
 def get_login():
     return render_template('login.html')
 
+
 DDOS = True
+
+
 @app.before_request
 def limit_requests():
     global request_count, last_reset
@@ -155,10 +161,12 @@ def get_attack_info():
     
     return attack_data
 
+
 @app.route("/logout")
 def logout():
     session["name"] = None 
     return redirect("/")
+
 
 if __name__=="__main__":
    
